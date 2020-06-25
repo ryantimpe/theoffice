@@ -3,6 +3,7 @@ library(tidytext)
 library(schrute)
 
 library(extrafont)
+font_import()
 loadfonts(device = "win")
 
 dat <- schrute::theoffice

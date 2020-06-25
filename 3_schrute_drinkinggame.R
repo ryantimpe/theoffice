@@ -31,11 +31,11 @@ dg_rule_list <- tibble::tribble(
   2., "Pam",       "'Dunder Mifflin, this is Pam'", "Pam",
   4., "Jim",       "~looks to camera~", "Jim",
   3., "Dwight",    "'Question.', beets or Mose", "Dwight",
-  6., "Michael",   "breasts, boobs", "Michael",
+  6., "Michael",   "(inappropriate comment\nabout women)", "Michael",
   7., "Angela",    "cats or Sprinkles", "Angela & Andy",
   8., "Andy",      "Cornell or Big Tuna", "Angela & Andy",
-  9., "Stanley",   "Laughs", "Phyllis, Stanley, & Meredith" ,
-  10, "Meredith",  "Drinks", "Phyllis, Stanley, & Meredith" , 
+  9., "Stanley",   "~laughs~", "Phyllis, Stanley, & Meredith" ,
+  10, "Meredith",  "~drinks~", "Phyllis, Stanley, & Meredith" , 
   11, "Phyllis",   "Bob (Vance)\n(Vance Refrigeration)","Phyllis, Stanley, & Meredith" ,
   5., "Kelly",     "'Oh My God!'", "Kelly & Ryan",
   12, "Ryan",      "actually", "Kelly & Ryan", 
@@ -212,7 +212,7 @@ plot_list <- dg_rule_list %>%
   scale_y_reverse(breaks =2:13 - 0.5) +
   coord_cartesian(xlim = c(-0.3, 4)) +
   labs(title = "Drink Triggers",
-       caption = "data from {schrute} | @ ryantimpe .com") +
+       caption = "data from {schrute}") +
   theme(
     legend.position = "bottom",
     legend.background = element_rect(fill = "#ffff88"),
@@ -240,4 +240,4 @@ m1 <- grid.arrange(arrangeGrob(grobs = list(plot_chart, plot_list),
                          ncol = 2, widths = c(2.5, 1)))
 
 sz = 10
-ggsave(filename = "DrinkingGame.png", m1, width = sz, height = sz*(9/16), device = "png")
+ggsave(filename = "dg_office.png", m1, width = sz, height = sz*(9/16), device = "png")
