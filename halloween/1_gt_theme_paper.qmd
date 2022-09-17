@@ -1,0 +1,20 @@
+---
+title: "1_gt_paper"
+---
+
+```{r}
+library(tidyverse)
+library(gt)
+# remotes::install_github("jthomasmock/gtExtras")
+library(gtExtras)
+
+```
+
+## Office data
+```{r}
+list.files()
+office_costumes <- readxl::read_xlsx("office_costumes.xlsx")
+```
+
+## Paper theme
+
