@@ -59,14 +59,13 @@ gt_theme_paper <- function(gt_object, ...){
         border-right: 2px solid #DE1F1F99 !important;
       }
       
-      tbody th.gt_col_heading:first-child {
+      th.gt_col_heading:first-child {
         border-right: 2px solid #DE1F1F99 !important;
       }
       
       tbody tr:last-child {
         border-bottom: 2px solid #ffffff00;
       }
-
       "
       , add = TRUE
       # , allow_duplicates = TRUE
