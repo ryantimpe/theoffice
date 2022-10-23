@@ -79,7 +79,7 @@ epdata %>%
   mutate(imdb_rating = floor(imdb_rating/2), #Turn into a 5 star rating, no fractions
          seas_ep = paste0("S", season, " ep", str_pad(episode, 2, pad = "0")),
          air_date = lubridate::as_date(air_date)
-         ) %>%  
+  ) %>%  
   select(-season, -episode) %>% 
   dplyr::relocate(seas_ep, .before =1) %>% 
   bind_rows(tibble::tibble(seas_ep = c("S1", "S4"))) %>% 
@@ -219,30 +219,186 @@ schrute %>%
   filter(str_detect(tolower(text), "ghost")) %>% 
   count(character, sort = TRUE)
 
+
+#Character & Seasons * Halloweer
+
+schrute %>% 
+  filter(str_detect(tolower(text), "halloween")) %>% 
+  count(character, sort = TRUE) %>% 
+  filter(n > 1) %>%
+  rename(metric = character)  %>% 
+  mutate(group = "Characters with more than 1 mention") %>% 
+  mutate(headshot = paste0("https://raw.githubusercontent.com/ryantimpe/theoffice/master/headshots/",
+                           tolower(metric), ".png")) %>% 
+  bind_rows(
+    schrute %>% 
+      filter(str_detect(tolower(text), "halloween")) %>% 
+      count(season) %>% 
+      rename(metric=season)%>% 
+      mutate(group = "mentions each season",
+             metric = paste0("S", metric),
+             headshot = NA)
+  ) %>% 
+  group_by(group) %>% 
+  gt() %>% 
+  tab_header(title = "Halloween in Scranton",
+             subtitle = "mentions of 'Halloween' in The Office") %>% 
+  gt::cols_move_to_start(headshot) %>% 
+  cols_align(
+    align = "left",
+    columns = metric
+  ) %>% 
+  tab_options(column_labels.hidden = TRUE) %>% 
+  gtExtras::gt_img_rows(headshot, height = 30) %>% 
+  gtExtras::gt_fa_repeats(n, name = "spider", palette = "#728700") %>% 
+  gt_theme_paper()
+
+
+
+# Characters * Scranton Strangler
 schrute %>% 
   filter(str_detect(tolower(text), "scranton strangler")) %>% 
   count(character, sort = TRUE) %>% 
+  filter(character != "Isabel") %>%
+  rename(metric = character)  %>% 
   mutate(headshot = paste0("https://raw.githubusercontent.com/ryantimpe/theoffice/master/headshots/",
-                           tolower(character), ".png")) %>% 
+                           tolower(metric), ".png")) %>% 
   gt() %>% 
   tab_header(title = "The Scranton Strangler",
              subtitle = "mentions of The Office's resident serial killer") %>% 
   gt::cols_move_to_start(headshot) %>% 
-  cols_label(character = "character",
+  cols_label(metric = "character",
              n = "mentions",
              headshot = "") %>% 
   cols_align(
     align = "left",
-    columns = character
+    columns = metric
   ) %>% 
-  gtExtras::gt_img_rows(headshot) %>% 
+  gtExtras::gt_img_rows(headshot, height = 40) %>% 
+  gtExtras::gt_fa_repeats(n, name = "skull", palette = "#991111") %>% 
   gt_theme_paper()%>% 
   opt_css(
     '      
       table {
-      background-image: url("https://raw.githubusercontent.com/ryantimpe/theoffice/master/headshots/jim.png")
+      background-image: url("https://raw.githubusercontent.com/ryantimpe/theoffice/master/halloween/bloodsplatter.png");
+      background-repeat: no-repeat;
+      background-size: 70%;
+      background-position: 100% 80%;
       }
 '
   )
-  
-  
+
+#Character & Seasons * Scranton strnagler
+
+schrute %>% 
+  filter(str_detect(tolower(text), "scranton strangler")) %>% 
+  count(character, sort = TRUE) %>% 
+  filter(character != "Isabel") %>%
+  rename(metric = character)  %>% 
+  mutate(group = "character split") %>% 
+  bind_rows(
+    schrute %>% 
+      filter(str_detect(tolower(text), "scranton strangler")) %>% 
+      count(season) %>% 
+      rename(metric=season)%>% 
+      mutate(group = "season split",
+             metric = paste0("S", metric))
+  ) %>% 
+  mutate(headshot = paste0("https://raw.githubusercontent.com/ryantimpe/theoffice/master/headshots/",
+                           tolower(metric), ".png")) %>% 
+  group_by(group) %>% 
+  gt() %>% 
+  tab_header(title = "The Scranton Strangler",
+             subtitle = "mentions of The Office's resident serial killer") %>% 
+  gt::cols_move_to_start(headshot) %>% 
+  cols_label(metric = "",
+             n = "mentions",
+             headshot = "") %>% 
+  cols_align(
+    align = "left",
+    columns = metric
+  ) %>% 
+  gtExtras::gt_img_rows(headshot, height = 40) %>% 
+  gtExtras::gt_fa_repeats(n, name = "skull", palette = "#991111") %>% 
+  gt_theme_paper()%>% 
+  opt_css(
+    '      
+      table {
+      background-image: url("https://raw.githubusercontent.com/ryantimpe/theoffice/master/halloween/bloodsplatter.png");
+      background-repeat: no-repeat;
+      background-size: 70%;
+      background-position: 50% 50%;
+      }
+'
+  )
+
+
+
+
+#Spookiest season
+
+spooky_words <- c("ghost", "halloween", "strangler", "blood", "murder",
+                  "death", "died", "decapitated", "monster", "scary", 
+                  "dead", "vampire", "creep", "zombie", "bat",  "witch",
+                  "killed", "evil", "horror", "psycho")
+
+schrute %>% 
+  filter(str_detect(tolower(text), spooky_words %>% paste0(collapse="|"))) %>% 
+  tidytext::unnest_tokens(words, text) %>% 
+  filter(words %in% spooky_words) %>% 
+  count(season, words, name = "count_spooky_word") %>% 
+  group_by(season) %>% 
+  mutate(most_frequent = words[count_spooky_word == max(count_spooky_word)]) %>% 
+  ungroup() %>% 
+  count(season, most_frequent, name = "count_spooky") %>% 
+  left_join(
+    #Add number of lines per season
+    schrute %>% 
+      count(season, name = "count_lines")
+  ) %>% 
+  mutate(spooky_percent = count_spooky/count_lines) %>% 
+  select(-starts_with("count_")) %>% 
+  gt() %>% 
+  tab_header(title = "Spooky in Scranton",
+             subtitle = "spooky words per line spoken in The Office") %>% 
+  cols_label(spooky_percent = "Spookiness") %>% 
+  gt::fmt_percent(spooky_percent, decimals = 1) %>% 
+  # gtExtras::gt_plt_bar_pct(spooky_percent, scaled = TRUE) %>% 
+  tab_style(style = css("background-image" = "url('http://raw.githubusercontent.com/ryantimpe/theoffice/master/halloween/bloodsplatter.png')",
+                        "background-repeat" = 'no-repeat',
+                        "background-size" = '70%',
+                        "background-position" = '50% 50%'
+                        ),
+            locations =cells_body(rows = 5)) %>% 
+  # gt_theme_paper() %>%
+  as_raw_html()
+
+
+
+#Reprex of the background image space issue
+
+library(dplyr)
+library(gt)
+
+gtcars %>%
+  dplyr::select(mfr, model, msrp) %>%
+  dplyr::slice(1:2) %>%
+  gt() %>% 
+  tab_style(style = 
+              css(
+                "background-image" = 
+                  "url('http://raw.githubusercontent.com/ryantimpe/theoffice/master/halloween/bloodsplatter.png')",
+                "background-repeat" = 'no-repeat',
+                "background-size" = '70%',
+                "background-position" = '50% 50%'
+  ),
+  locations =cells_body(rows = 2)) %>% 
+  gt::as_raw_html()
+
+css(
+  "background-image" = 
+    "url('http://raw.githubusercontent.com/ryantimpe/theoffice/master/halloween/bloodsplatter.png')",
+  "background-repeat" = 'no-repeat',
+  "background-size" = '70%',
+  "background-position" = '50% 50%'
+)

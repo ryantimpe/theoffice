@@ -55,7 +55,7 @@ gt_theme_paper <- function(gt_object, ...){
     ) %>%
     opt_css(
       "
-      td.gt_row:first-child{
+      .gt_stub:first-child{
         border-right: 2px solid #DE1F1F99 !important;
       }
       
