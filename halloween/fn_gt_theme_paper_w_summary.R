@@ -18,7 +18,7 @@
 #'
 #' @family Themes
 
-gt_theme_paper <- function(gt_object, ...){
+gt_theme_paper_w_summary <- function(gt_object, ...){
   
   stopifnot("'gt_object' must be a 'gt_tbl', have you accidentally passed raw data?" = "gt_tbl" %in% class(gt_object))
   
@@ -57,20 +57,33 @@ gt_theme_paper <- function(gt_object, ...){
     ) %>%
     opt_css(
       "
-      .gt_table {
-        font-family: Courier;
+      /* red line moves to 2nd column*/
+      .gt_row:nth-child(2){
+        border-right: 2px solid #DE1F1F99 !important;
       }
       
-      .gt_row:first-child{
+      th.gt_col_heading:nth-child(2) {
         border-right: 2px solid #DE1F1F99 !important;
+      }
+      
+      /*blank first column right border*/
+      
+      .gt_row:first-child{
+        border-right: none !important;
+        display: none;
       }
       
       th.gt_col_heading:first-child {
-        border-right: 2px solid #DE1F1F99 !important;
+        border-right: none !important;
+        display:none;
       }
-      
+
       .gt_table_body tr:last-child {
         border-bottom: 2px solid #ffffff00;
+      }
+      
+      .gt_source_note {
+      text-align: right;
       }
       "
       , add = TRUE

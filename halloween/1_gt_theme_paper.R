@@ -6,7 +6,7 @@ library(schrute)
 
 ## Office data
 
-office_costumes <- readxl::read_xlsx("halloween/office_costumes.xlsx")
+office_costumes <- read_csv("halloween/office_costumes.csv")
 
 schrute <- schrute::theoffice
 
@@ -29,18 +29,19 @@ character_order <- tibble::tribble(
   "Ryan", "primary", "other",
   "Meredith", "primary", "other",
   "Creed", "primary", "other",
-  "Devon", "secondary", "other",
   "Andy", "primary", "sales",
   "Erin", "primary", "other",
   "Darryl", "primary", "other",
   "Toby", "primary", "other",
+  "Devon", "secondary", "other",
   "Gabe", "secondary", "other",
   "Todd", "secondary", "sales",
+  "Jo", "secondary", "other",
   "Bob Vance", "guest", "family",
   "Nellie", "secondary", "other",
   "Carol", "guest", "family",
   "Cece", "guest", "family",
-  "Robert Lipton", "guest", "family",
+  "Robert Lipton", "guest", "family"
 )
 
 office_costumes2 <- office_costumes %>% 
@@ -208,6 +209,57 @@ for(ii in office_costumes2 %>%
 }
 gt_oc2
 
+# Who dressed up as each other
+
+office_within_u <- read_csv("Halloween/office_within_universe.csv")
+
+## Grid version
+
+gt_oc3 <- office_within_u %>% 
+  #Set characters as factor to have an order
+  mutate(character = factor(character, levels = character_order$character),
+         dressed_as = factor(dressed_as, levels = character_order$character)) %>% 
+  #Check if halloween
+  left_join(epdata) %>% 
+  # mutate(halloween = !is.na(title)) %>% 
+  arrange(dressed_as, character) %>% 
+  mutate(headshot = paste0("https://raw.githubusercontent.com/ryantimpe/theoffice/master/headshots/",
+                           tolower(character), ".png")) %>% 
+  mutate(dress_up = paste0("https://raw.githubusercontent.com/ryantimpe/theoffice/master/", 
+                           "headshots/halloween/",
+                           tolower(character), "_", 
+                           season, "_", episode, "_",
+                           tolower(dressed_as), ".png")) %>%
+  select(headshot, character, dressed_as, dress_up) %>% 
+  pivot_wider(names_from = dressed_as, values_from = dress_up,
+              values_fill = "") %>% 
+  gt() %>% 
+  tab_header(title = "Identity theft is note a joke, Jim",
+             subtitle = "characters dressed up as each other") %>% 
+  cols_label(
+    headshot = "dressed as..."
+  ) %>% 
+  gt_merge_stack_image(headshot, character, 
+                       img_height = 50,
+                       img_css = css(background.color = "#ffff88",
+                                     border = "solid black")) %>% 
+  cols_align(
+    align = "center",
+    columns = headshot
+  ) %>% 
+  # gt_img_rows(headshot, height = 50) %>% 
+  gt_theme_paper()
+
+for(ii in unique(office_within_u$dressed_as)){
+  gt_oc3 <- gt_oc3 %>% 
+    gt_img_rows(ii, height = 60)
+}
+
+gt_oc3 
+
+
+
+
 
 # Mentions of Halloween
 
@@ -311,9 +363,9 @@ schrute %>%
   tab_header(title = "The Scranton Strangler",
              subtitle = "mentions of The Office's resident serial killer") %>% 
   gt::cols_move_to_start(headshot) %>% 
-  cols_label(metric = "",
-             n = "mentions",
-             headshot = "") %>% 
+  tab_options(
+    column_labels.hidden = TRUE
+  ) %>% 
   cols_align(
     align = "left",
     columns = metric
@@ -368,37 +420,134 @@ schrute %>%
                         "background-repeat" = 'no-repeat',
                         "background-size" = '70%',
                         "background-position" = '50% 50%'
-                        ),
-            locations =cells_body(rows = 5)) %>% 
-  # gt_theme_paper() %>%
-  as_raw_html()
-
-
-
-#Reprex of the background image space issue
-
-library(dplyr)
-library(gt)
-
-gtcars %>%
-  dplyr::select(mfr, model, msrp) %>%
-  dplyr::slice(1:2) %>%
-  gt() %>% 
-  tab_style(style = 
-              css(
-                "background-image" = 
-                  "url('http://raw.githubusercontent.com/ryantimpe/theoffice/master/halloween/bloodsplatter.png')",
-                "background-repeat" = 'no-repeat',
-                "background-size" = '70%',
-                "background-position" = '50% 50%'
   ),
-  locations =cells_body(rows = 2)) %>% 
-  gt::as_raw_html()
+  locations =cells_body(rows = 5)) %>% 
+  gt_theme_paper()
 
-css(
-  "background-image" = 
-    "url('http://raw.githubusercontent.com/ryantimpe/theoffice/master/halloween/bloodsplatter.png')",
-  "background-repeat" = 'no-repeat',
-  "background-size" = '70%',
-  "background-position" = '50% 50%'
+
+
+
+# Who dressed up each season... simpler table
+
+office_costumes2 %>% 
+  filter(ep_season >0 ) %>% 
+  filter(char_category == "primary") %>% 
+  select(ep_season, character) %>% 
+  count(ep_season, character) %>% 
+  complete(ep_season = 1:9) %>% 
+  mutate(ep_season = paste0("s", ep_season)) %>% 
+  bind_rows(
+    group_by(., character) %>% 
+      summarize(n=sum(n, na.rm=TRUE), .groups = "drop") %>% 
+      ungroup() %>% 
+      drop_na(character) %>% 
+      mutate(ep_season = "series")
+  ) %>% 
+  pivot_wider(names_from = ep_season, values_from = n,
+              values_fill = NA) %>% 
+  drop_na(character) %>% 
+  arrange(character) %>% 
+  mutate(headshot = paste0("https://raw.githubusercontent.com/ryantimpe/theoffice/master/headshots/",
+                           tolower(character), ".png"))%>%
+  dplyr::relocate(headshot) %>% 
+  gt(rowname_col = "headshot") %>% 
+  tab_header(title = "Who dressed up in the Halloween episodes?",
+             subtitle = "number of costumes for each character each season") %>% 
+  # gt_img_rows(headshot, height = 25) %>%
+  text_transform(
+    locations = cells_stub(),
+    fn = function(x) {
+      web_image(
+        url = x,
+        height = 25
+      )}
+  ) %>% 
+  tab_style(locations = cells_stub(),
+            style = css(text.align = "center")) %>% 
+  cols_hide(character) %>% 
+  cols_label(headshot = "") %>%
+  cols_align("center") %>% 
+  tab_style(locations = cells_body(series),
+            style = list(#cell_fill("#99999966"),
+              css(font.weight = "bold"))) %>%
+  tab_style(locations = cells_column_labels(series),
+            style = list(#cell_fill("#FBF71966"),
+              css(padding="5px 0px 5px 0px",
+                  font.size = "80%"))) %>% 
+  gt::summary_rows(columns = c(num_range("s", 1:9), series),
+                   fns = list("Seas" = ~sum(., na.rm=TRUE)),
+                   formatter = fmt_integer,
+                   missing_text = "ALL") %>% 
+  tab_source_note(html('A single 
+                       <svg aria-hidden="true" role="img" viewBox="0 0 448 512" style="height:1em;width:0.88em;vertical-align:-0.125em;margin-left:auto;margin-right:auto;font-size:inherit;fill:currentColor;overflow:visible;position:relative;"><path d="M438.6 105.4C451.1 117.9 451.1 138.1 438.6 150.6L182.6 406.6C170.1 419.1 149.9 419.1 137.4 406.6L9.372 278.6C-3.124 266.1-3.124 245.9 9.372 233.4C21.87 220.9 42.13 220.9 54.63 233.4L159.1 338.7L393.4 105.4C405.9 92.88 426.1 92.88 438.6 105.4H438.6z"/></svg> 
+                       denotes 1 costume. <br/>
+                       A double <svg aria-hidden="true" role="img" viewBox="0 0 448 512" style="height:1em;width:0.88em;vertical-align:-0.125em;margin-left:auto;margin-right:auto;font-size:inherit;color:"#b40000";overflow:visible;position:relative;"><path d="M182.6 246.6C170.1 259.1 149.9 259.1 137.4 246.6L57.37 166.6C44.88 154.1 44.88 133.9 57.37 121.4C69.87 108.9 90.13 108.9 102.6 121.4L159.1 178.7L297.4 41.37C309.9 28.88 330.1 28.88 342.6 41.37C355.1 53.87 355.1 74.13 342.6 86.63L182.6 246.6zM182.6 470.6C170.1 483.1 149.9 483.1 137.4 470.6L9.372 342.6C-3.124 330.1-3.124 309.9 9.372 297.4C21.87 284.9 42.13 284.9 54.63 297.4L159.1 402.7L393.4 169.4C405.9 156.9 426.1 156.9 438.6 169.4C451.1 181.9 451.1 202.1 438.6 214.6L182.6 470.6z"/></svg> 
+                       denotes more than 1.')) %>% 
+  gt_theme_paper() %>% 
+  gt_int_as_fa(s1:s9,
+               palette = c("#666666", "#b40000"))
+
+
+
+# Costume category
+
+unique(office_costumes2$costume_category)
+
+
+tibble::tribble(
+                ~costume_category, ~fa_icon, ~color,
+                "Other", "question", "#444444", #grey
+                "Fictional character", "crown", "#d4af37", #gold
+                "Animal", "cat", "#005452", #teal
+                "Low-effort", "mask", "#afafaf", #light grey
+                "Classic", "ghost", "#FE9A0A", #orange
+                "Real person", "user", "#4040FF", #blue
+                "Occupation", "user-nurse", "#561D5E", #purple
+                "Multiple", "check-double", "#b40000", #red
+                "The Office universe", "paperclip", "#000000"
 )
+
+office_costumes2 %>% 
+  filter(ep_season >0 ) %>% 
+  filter(char_category == "primary") %>% 
+  group_by(ep_season, character) %>% 
+  mutate(costume_count = n()) %>% 
+  ungroup() %>% 
+  mutate(costume_category = case_when(
+    costume_count > 1 ~ "Multiple",
+    costume_category %in% c("Performer", "Public figure") ~ "Real person",
+    TRUE ~ costume_category
+  )) %>% 
+  select(ep_season, character, costume_category) 
+  distinct() %>% 
+  complete(ep_season = 1:9) %>% 
+  mutate(ep_season = paste0("s", ep_season)) %>% 
+  pivot_wider(names_from = ep_season, values_from = costume_category,
+              values_fill = NA) %>% 
+  drop_na(character) %>% 
+  arrange(character) %>% 
+  mutate(headshot = paste0("https://raw.githubusercontent.com/ryantimpe/theoffice/master/headshots/",
+                           tolower(character), ".png"))%>%
+  dplyr::relocate(headshot) %>% 
+  gt(rowname_col = "headshot")  %>% 
+  tab_header(title = "Costume categories in Halloween episodes",
+             subtitle = "") %>% 
+  text_transform(
+    locations = cells_stub(),
+    fn = function(x) {
+      web_image(
+        url = x,
+        height = 25
+      )}
+  ) %>% 
+  tab_style(locations = cells_stub(),
+            style = css(text.align = "center")) %>% 
+  cols_hide(character) %>% 
+  cols_label(headshot = "") %>%
+  cols_align("center") %>% 
+  # tab_source_note(html('A single 
+  #                      <svg aria-hidden="true" role="img" viewBox="0 0 448 512" style="height:1em;width:0.88em;vertical-align:-0.125em;margin-left:auto;margin-right:auto;font-size:inherit;fill:currentColor;overflow:visible;position:relative;"><path d="M438.6 105.4C451.1 117.9 451.1 138.1 438.6 150.6L182.6 406.6C170.1 419.1 149.9 419.1 137.4 406.6L9.372 278.6C-3.124 266.1-3.124 245.9 9.372 233.4C21.87 220.9 42.13 220.9 54.63 233.4L159.1 338.7L393.4 105.4C405.9 92.88 426.1 92.88 438.6 105.4H438.6z"/></svg> 
+  #                      denotes 1 costume. <br/>
+  #                      A double <svg aria-hidden="true" role="img" viewBox="0 0 448 512" style="height:1em;width:0.88em;vertical-align:-0.125em;margin-left:auto;margin-right:auto;font-size:inherit;color:"#b40000";overflow:visible;position:relative;"><path d="M182.6 246.6C170.1 259.1 149.9 259.1 137.4 246.6L57.37 166.6C44.88 154.1 44.88 133.9 57.37 121.4C69.87 108.9 90.13 108.9 102.6 121.4L159.1 178.7L297.4 41.37C309.9 28.88 330.1 28.88 342.6 41.37C355.1 53.87 355.1 74.13 342.6 86.63L182.6 246.6zM182.6 470.6C170.1 483.1 149.9 483.1 137.4 470.6L9.372 342.6C-3.124 330.1-3.124 309.9 9.372 297.4C21.87 284.9 42.13 284.9 54.63 297.4L159.1 402.7L393.4 169.4C405.9 156.9 426.1 156.9 438.6 169.4C451.1 181.9 451.1 202.1 438.6 214.6L182.6 470.6z"/></svg> 
+  #                      denotes more than 1.')) %>% 
+  gt_theme_paper() 
