@@ -494,44 +494,66 @@ office_costumes2 %>%
 unique(office_costumes2$costume_category)
 
 
-tibble::tribble(
-                ~costume_category, ~fa_icon, ~color,
-                "Other", "question", "#444444", #grey
-                "Fictional character", "crown", "#d4af37", #gold
-                "Animal", "cat", "#005452", #teal
-                "Low-effort", "mask", "#afafaf", #light grey
-                "Classic", "ghost", "#FE9A0A", #orange
-                "Real person", "user", "#4040FF", #blue
-                "Occupation", "user-nurse", "#561D5E", #purple
-                "Multiple", "check-double", "#b40000", #red
-                "The Office universe", "paperclip", "#000000"
+category_icons <- tibble::tribble(
+  ~costume_category, ~fa_icon, ~color,
+  "Classic", "ghost", "#bdda57", #green
+  "Animal", "cat", "#005452", #teal
+  "Fictional character", "crown", "#d4af37", #gold
+  "Real person", "user", "#4040FF", #blue
+  "Occupation", "user-nurse", "#561D5E", #purple
+  "Low-effort", "face-meh", "#afafaf", #light grey
+  "The Office universe", "paperclip", "#000000",
+  "Other", "mask", "#444444", #grey
 )
 
-office_costumes2 %>% 
+office_costume_categories <- office_costumes2 %>% 
   filter(ep_season >0 ) %>% 
-  filter(char_category == "primary") %>% 
-  group_by(ep_season, character) %>% 
-  mutate(costume_count = n()) %>% 
-  ungroup() %>% 
+  filter(char_category != "guest") %>% 
   mutate(costume_category = case_when(
-    costume_count > 1 ~ "Multiple",
     costume_category %in% c("Performer", "Public figure") ~ "Real person",
     TRUE ~ costume_category
   )) %>% 
-  select(ep_season, character, costume_category) 
-  distinct() %>% 
+  select(ep_season, character, costume_category) %>% 
   complete(ep_season = 1:9) %>% 
   mutate(ep_season = paste0("s", ep_season)) %>% 
-  pivot_wider(names_from = ep_season, values_from = costume_category,
-              values_fill = NA) %>% 
+  group_by(ep_season, character) %>% 
+  mutate(ep_season2 = ifelse(row_number() == 2, 
+                             paste0(ep_season, "*"),
+                             ep_season)) %>% 
+  ungroup() %>% 
+  select(-ep_season) 
+
+ci2 <- category_icons %>% 
+  left_join(
+    office_costume_categories %>% 
+      count(costume_category), by = "costume_category"
+  )
+
+office_costume_categories %>% 
+  pivot_wider(names_from = ep_season2, values_from = costume_category,
+              values_fill = NA) %>%
   drop_na(character) %>% 
   arrange(character) %>% 
   mutate(headshot = paste0("https://raw.githubusercontent.com/ryantimpe/theoffice/master/headshots/",
                            tolower(character), ".png"))%>%
   dplyr::relocate(headshot) %>% 
   gt(rowname_col = "headshot")  %>% 
-  tab_header(title = "Costume categories in Halloween episodes",
-             subtitle = "") %>% 
+  tab_header(title = "Costumes worn in Halloween episodes, by theme",
+             subtitle = html(glue::glue(
+               "
+               {fontawesome::fa(ci2$fa_icon[1], fill = ci2$color[1])} {ci2$costume_category[1]}: <b>{ci2$n[1]}</b> total <br/>
+               {fontawesome::fa(ci2$fa_icon[2], fill = ci2$color[2])} {ci2$costume_category[2]}: <b>{ci2$n[2]}</b> <br/>
+               {fontawesome::fa(ci2$fa_icon[3], fill = ci2$color[3])} {ci2$costume_category[3]}: <b>{ci2$n[3]}</b> <br/>
+               {fontawesome::fa(ci2$fa_icon[4], fill = ci2$color[4])} {ci2$costume_category[4]}: <b>{ci2$n[4]}</b> <br/>
+               {fontawesome::fa(ci2$fa_icon[5], fill = ci2$color[5])} {ci2$costume_category[5]}: <b>{ci2$n[5]}</b> <br/>
+               {fontawesome::fa(ci2$fa_icon[6], fill = ci2$color[6])} {ci2$costume_category[6]}: <b>{ci2$n[6]}</b> <br/>
+               {fontawesome::fa(ci2$fa_icon[7], fill = ci2$color[7])} {ci2$costume_category[7]}: <b>{ci2$n[7]}</b> <br/>
+               {fontawesome::fa(ci2$fa_icon[8], fill = ci2$color[8])} {ci2$costume_category[8]}: <b>{ci2$n[8]}</b> <br/>
+               "
+             ))) %>% 
+  tab_source_note("Some characters in seasons 7 and 9 wore multiple costumes.") %>% 
+  cols_label(`s7*` = "s7",
+             `s9*` = "s9") %>% 
   text_transform(
     locations = cells_stub(),
     fn = function(x) {
@@ -542,12 +564,11 @@ office_costumes2 %>%
   ) %>% 
   tab_style(locations = cells_stub(),
             style = css(text.align = "center")) %>% 
+  tab_style(locations = cells_body(c("s7*", "s9*")),
+            style = cell_fill(colorspace::darken("#F5F5F5"))) %>% 
   cols_hide(character) %>% 
   cols_label(headshot = "") %>%
   cols_align("center") %>% 
-  # tab_source_note(html('A single 
-  #                      <svg aria-hidden="true" role="img" viewBox="0 0 448 512" style="height:1em;width:0.88em;vertical-align:-0.125em;margin-left:auto;margin-right:auto;font-size:inherit;fill:currentColor;overflow:visible;position:relative;"><path d="M438.6 105.4C451.1 117.9 451.1 138.1 438.6 150.6L182.6 406.6C170.1 419.1 149.9 419.1 137.4 406.6L9.372 278.6C-3.124 266.1-3.124 245.9 9.372 233.4C21.87 220.9 42.13 220.9 54.63 233.4L159.1 338.7L393.4 105.4C405.9 92.88 426.1 92.88 438.6 105.4H438.6z"/></svg> 
-  #                      denotes 1 costume. <br/>
-  #                      A double <svg aria-hidden="true" role="img" viewBox="0 0 448 512" style="height:1em;width:0.88em;vertical-align:-0.125em;margin-left:auto;margin-right:auto;font-size:inherit;color:"#b40000";overflow:visible;position:relative;"><path d="M182.6 246.6C170.1 259.1 149.9 259.1 137.4 246.6L57.37 166.6C44.88 154.1 44.88 133.9 57.37 121.4C69.87 108.9 90.13 108.9 102.6 121.4L159.1 178.7L297.4 41.37C309.9 28.88 330.1 28.88 342.6 41.37C355.1 53.87 355.1 74.13 342.6 86.63L182.6 246.6zM182.6 470.6C170.1 483.1 149.9 483.1 137.4 470.6L9.372 342.6C-3.124 330.1-3.124 309.9 9.372 297.4C21.87 284.9 42.13 284.9 54.63 297.4L159.1 402.7L393.4 169.4C405.9 156.9 426.1 156.9 438.6 169.4C451.1 181.9 451.1 202.1 438.6 214.6L182.6 470.6z"/></svg> 
-  #                      denotes more than 1.')) %>% 
-  gt_theme_paper() 
+  gt_theme_paper() %>% 
+  gt_text_as_fa(s1:`s9*`,
+                category_icons)

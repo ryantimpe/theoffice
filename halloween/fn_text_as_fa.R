@@ -19,7 +19,7 @@ gt_text_as_fa <- function(gt_object, column,
         this_icon = reference_table %>% filter(costume_category == xy) %>% pull(fa_icon)
         this_fill = reference_table %>% filter(costume_category == xy) %>% pull(color)
         
-        fa_repeats <- fontawesome::fa(this_icon, ..., 
+        this_fa <- fontawesome::fa(this_icon, ..., 
                                       fill = this_fill, 
                                       height = "20px", a11y = "sem") %>%
           as.character() %>%
@@ -28,8 +28,8 @@ gt_text_as_fa <- function(gt_object, column,
         label <- paste(xy, this_icon)
         
         htmltools::div(
-          title = label, "aria-label" = label, role = "img",
-          list(fa_repeats)
+          title = xy, "aria-label" = xy, role = "img",
+          list(this_fa)
         )
       })
     }
