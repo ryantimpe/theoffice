@@ -279,7 +279,7 @@ gt_oc3 <- office_within_u %>%
   pivot_wider(names_from = dressed_as, values_from = dress_up,
               values_fill = "") %>% 
   gt() %>% 
-  tab_header(title = "Identity theft is note a joke, Jim",
+  tab_header(title = "Identity theft is not a joke, Jim",
              subtitle = "characters dressed up as each other") %>% 
   cols_label(
     headshot = "dressed as..."
@@ -302,18 +302,55 @@ for(ii in unique(office_within_u$dressed_as)){
 
 gt_oc3 
 
+#TABLE - Scranton Strangler
 
-
+schrute::theoffice %>% 
+  filter(str_detect(tolower(text), "scranton strangler")) %>% 
+  count(character, sort = TRUE) %>% 
+  filter(character != "Isabel") %>%
+  rename(metric = character)  %>% 
+  mutate(group = "characters") %>% 
+  bind_rows(
+    schrute %>% 
+      filter(str_detect(tolower(text), "scranton strangler")) %>% 
+      count(season) %>% 
+      rename(metric=season)%>% 
+      mutate(group = "seasons",
+             metric = paste0("s", metric))
+  ) %>% 
+  mutate(headshot = paste0("https://raw.githubusercontent.com/ryantimpe/theoffice/master/headshots/",
+                           tolower(metric), ".png")) %>% 
+  group_by(group) %>% 
+  gt() %>% 
+  tab_header(title = "The Scranton Strangler",
+             subtitle = "mentions of The Office's resident serial killer") %>% 
+  gt::cols_move_to_start(headshot) %>% 
+  tab_options(
+    column_labels.hidden = TRUE
+  ) %>% 
+  cols_align(
+    align = "left",
+    columns = metric
+  ) %>% 
+  gtExtras::gt_img_rows(headshot, height = 40) %>% 
+  gtExtras::gt_fa_repeats(n, name = "skull", palette = "#991111") %>% 
+  gt_theme_paper()%>% 
+  opt_css(
+    '      
+      table {
+      background-image: url("https://raw.githubusercontent.com/ryantimpe/theoffice/master/halloween/bloodsplatter.png");
+      background-repeat: no-repeat;
+      background-size: 70%;
+      background-position: 50% 50%;
+      }
+'
+  )
 
 
 # Mentions of Halloween
 
-schrute %>% 
+schrute::theoffice %>% 
   filter(str_detect(text, "Halloween")) %>% 
-  count(character, sort = TRUE)
-
-schrute %>% 
-  filter(str_detect(tolower(text), "ghost")) %>% 
   count(character, sort = TRUE)
 
 
@@ -349,85 +386,6 @@ schrute %>%
   gtExtras::gt_img_rows(headshot, height = 30) %>% 
   gtExtras::gt_fa_repeats(n, name = "spider", palette = "#728700") %>% 
   gt_theme_paper()
-
-
-
-# Characters * Scranton Strangler
-schrute %>% 
-  filter(str_detect(tolower(text), "scranton strangler")) %>% 
-  count(character, sort = TRUE) %>% 
-  filter(character != "Isabel") %>%
-  rename(metric = character)  %>% 
-  mutate(headshot = paste0("https://raw.githubusercontent.com/ryantimpe/theoffice/master/headshots/",
-                           tolower(metric), ".png")) %>% 
-  gt() %>% 
-  tab_header(title = "The Scranton Strangler",
-             subtitle = "mentions of The Office's resident serial killer") %>% 
-  gt::cols_move_to_start(headshot) %>% 
-  cols_label(metric = "character",
-             n = "mentions",
-             headshot = "") %>% 
-  cols_align(
-    align = "left",
-    columns = metric
-  ) %>% 
-  gtExtras::gt_img_rows(headshot, height = 40) %>% 
-  gtExtras::gt_fa_repeats(n, name = "skull", palette = "#991111") %>% 
-  gt_theme_paper()%>% 
-  opt_css(
-    '      
-      table {
-      background-image: url("https://raw.githubusercontent.com/ryantimpe/theoffice/master/halloween/bloodsplatter.png");
-      background-repeat: no-repeat;
-      background-size: 70%;
-      background-position: 100% 80%;
-      }
-'
-  )
-
-#Character & Seasons * Scranton strnagler
-
-schrute %>% 
-  filter(str_detect(tolower(text), "scranton strangler")) %>% 
-  count(character, sort = TRUE) %>% 
-  filter(character != "Isabel") %>%
-  rename(metric = character)  %>% 
-  mutate(group = "character split") %>% 
-  bind_rows(
-    schrute %>% 
-      filter(str_detect(tolower(text), "scranton strangler")) %>% 
-      count(season) %>% 
-      rename(metric=season)%>% 
-      mutate(group = "season split",
-             metric = paste0("S", metric))
-  ) %>% 
-  mutate(headshot = paste0("https://raw.githubusercontent.com/ryantimpe/theoffice/master/headshots/",
-                           tolower(metric), ".png")) %>% 
-  group_by(group) %>% 
-  gt() %>% 
-  tab_header(title = "The Scranton Strangler",
-             subtitle = "mentions of The Office's resident serial killer") %>% 
-  gt::cols_move_to_start(headshot) %>% 
-  tab_options(
-    column_labels.hidden = TRUE
-  ) %>% 
-  cols_align(
-    align = "left",
-    columns = metric
-  ) %>% 
-  gtExtras::gt_img_rows(headshot, height = 40) %>% 
-  gtExtras::gt_fa_repeats(n, name = "skull", palette = "#991111") %>% 
-  gt_theme_paper()%>% 
-  opt_css(
-    '      
-      table {
-      background-image: url("https://raw.githubusercontent.com/ryantimpe/theoffice/master/halloween/bloodsplatter.png");
-      background-repeat: no-repeat;
-      background-size: 70%;
-      background-position: 50% 50%;
-      }
-'
-  )
 
 
 
@@ -469,162 +427,3 @@ schrute %>%
   locations =cells_body(rows = 5)) %>% 
   gt_theme_paper()
 
-
-
-
-# Who dressed up each season... simpler table
-
-
-
-
-
-# Costume category
-
-unique(office_costumes2$costume_category)
-
-
-
-
-office_costume_categories <- office_costumes2 %>% 
-  filter(ep_season >0 ) %>% 
-  filter(char_category != "guest") %>% 
-  mutate(costume_category = case_when(
-    costume_category %in% c("Performer", "Public figure") ~ "Real person",
-    TRUE ~ costume_category
-  )) %>% 
-  select(ep_season, character, costume_category) %>% 
-  complete(ep_season = 1:9) %>% 
-  mutate(ep_season = paste0("s", ep_season)) %>% 
-  group_by(ep_season, character) %>% 
-  mutate(ep_season2 = ifelse(row_number() == 2, 
-                             paste0(ep_season, "*"),
-                             ep_season)) %>% 
-  ungroup() %>% 
-  select(-ep_season) 
-
-ci2 <- category_icons %>% 
-  left_join(
-    office_costume_categories %>% 
-      count(costume_category), by = "costume_category"
-  )
-
-office_costume_categories %>% 
-  pivot_wider(names_from = ep_season2, values_from = costume_category,
-              values_fill = NA) %>%
-  drop_na(character) %>% 
-  arrange(character) %>% 
-  mutate(headshot = paste0("https://raw.githubusercontent.com/ryantimpe/theoffice/master/headshots/",
-                           tolower(character), ".png"))%>%
-  dplyr::relocate(headshot) %>% 
-  gt(rowname_col = "headshot")  %>% 
-  tab_header(title = "Costumes worn in Halloween episodes, by theme",
-             subtitle = html(glue::glue(
-               "
-               {fontawesome::fa(ci2$fa_icon[1], fill = ci2$color[1])} {ci2$costume_category[1]}: <b>{ci2$n[1]}</b> total <br/>
-               {fontawesome::fa(ci2$fa_icon[2], fill = ci2$color[2])} {ci2$costume_category[2]}: <b>{ci2$n[2]}</b> <br/>
-               {fontawesome::fa(ci2$fa_icon[3], fill = ci2$color[3])} {ci2$costume_category[3]}: <b>{ci2$n[3]}</b> <br/>
-               {fontawesome::fa(ci2$fa_icon[4], fill = ci2$color[4])} {ci2$costume_category[4]}: <b>{ci2$n[4]}</b> <br/>
-               {fontawesome::fa(ci2$fa_icon[5], fill = ci2$color[5])} {ci2$costume_category[5]}: <b>{ci2$n[5]}</b> <br/>
-               {fontawesome::fa(ci2$fa_icon[6], fill = ci2$color[6])} {ci2$costume_category[6]}: <b>{ci2$n[6]}</b> <br/>
-               {fontawesome::fa(ci2$fa_icon[7], fill = ci2$color[7])} {ci2$costume_category[7]}: <b>{ci2$n[7]}</b> <br/>
-               {fontawesome::fa(ci2$fa_icon[8], fill = ci2$color[8])} {ci2$costume_category[8]}: <b>{ci2$n[8]}</b> <br/>
-               "
-             ))) %>% 
-  tab_source_note("Some characters in seasons 7 and 9 wore multiple costumes.") %>% 
-  cols_label(`s7*` = "s7",
-             `s9*` = "s9") %>% 
-  text_transform(
-    locations = cells_stub(),
-    fn = function(x) {
-      web_image(
-        url = x,
-        height = 25
-      )}
-  ) %>% 
-  tab_style(locations = cells_stub(),
-            style = css(text.align = "center")) %>% 
-  tab_style(locations = cells_body(c("s7*", "s9*")),
-            style = cell_fill(colorspace::darken("#F5F5F5"))) %>% 
-  cols_hide(character) %>% 
-  cols_label(headshot = "") %>%
-  cols_align("center") %>% 
-  gt_theme_paper() %>% 
-  gt_text_as_fa(s1:`s9*`,
-                category_icons)
-
-
-# Costume category WITH ICON TITLE FOR HOVERING
-
-
-office_costume_categories2 <- office_costumes2 %>% 
-  filter(ep_season >0 ) %>% 
-  filter(char_category != "guest") %>% 
-  mutate(costume_category = case_when(
-    costume_category %in% c("Performer", "Public figure") ~ "Real person",
-    TRUE ~ costume_category
-  )) %>% 
-  select(ep_season, character, costume_category, costume_detail) %>% 
-  complete(ep_season = 1:9) %>% 
-  mutate(ep_season = paste0("s", ep_season)) %>% 
-  group_by(ep_season, character) %>% 
-  mutate(ep_season2 = ifelse(row_number() == 2, 
-                             paste0(ep_season, "*"),
-                             ep_season)) %>% 
-  ungroup() %>% 
-  select(-ep_season) 
-
-ci2 <- category_icons %>% 
-  left_join(
-    office_costume_categories %>% 
-      count(costume_category), by = "costume_category"
-  )
-
-costume_details <- office_costume_categories2 %>% 
-  select(costume_detail, costume_category) %>% 
-  distinct()
-
-office_costume_categories2 %>% 
-  select(-costume_category) %>% 
-  pivot_wider(names_from = ep_season2, values_from = costume_detail,
-              values_fill = NA) %>%
-  drop_na(character) %>% 
-  arrange(character) %>% 
-  mutate(headshot = paste0("https://raw.githubusercontent.com/ryantimpe/theoffice/master/headshots/",
-                           tolower(character), ".png"))%>%
-  dplyr::relocate(headshot) %>% 
-  gt(rowname_col = "headshot")  %>% 
-  tab_header(title = "Costumes worn in Halloween episodes, by theme",
-             subtitle = html(glue::glue(
-               "
-               {fontawesome::fa(ci2$fa_icon[1], fill = ci2$color[1])} {ci2$costume_category[1]}: <b>{ci2$n[1]}</b> total <br/>
-               {fontawesome::fa(ci2$fa_icon[2], fill = ci2$color[2])} {ci2$costume_category[2]}: <b>{ci2$n[2]}</b> <br/>
-               {fontawesome::fa(ci2$fa_icon[3], fill = ci2$color[3])} {ci2$costume_category[3]}: <b>{ci2$n[3]}</b> <br/>
-               {fontawesome::fa(ci2$fa_icon[4], fill = ci2$color[4])} {ci2$costume_category[4]}: <b>{ci2$n[4]}</b> <br/>
-               {fontawesome::fa(ci2$fa_icon[5], fill = ci2$color[5])} {ci2$costume_category[5]}: <b>{ci2$n[5]}</b> <br/>
-               {fontawesome::fa(ci2$fa_icon[6], fill = ci2$color[6])} {ci2$costume_category[6]}: <b>{ci2$n[6]}</b> <br/>
-               {fontawesome::fa(ci2$fa_icon[7], fill = ci2$color[7])} {ci2$costume_category[7]}: <b>{ci2$n[7]}</b> <br/>
-               {fontawesome::fa(ci2$fa_icon[8], fill = ci2$color[8])} {ci2$costume_category[8]}: <b>{ci2$n[8]}</b> <br/>
-               "
-             ))) %>% 
-  tab_source_note("Some characters in seasons 7 and 9 wore multiple costumes.") %>% 
-  cols_label(`s7*` = "s7",
-             `s9*` = "s9") %>% 
-  text_transform(
-    locations = cells_stub(),
-    fn = function(x) {
-      web_image(
-        url = x,
-        height = 25
-      )}
-  ) %>% 
-  tab_style(locations = cells_stub(),
-            style = css(text.align = "center")) %>% 
-  tab_style(locations = cells_body(c("s7*", "s9*")),
-            style = cell_fill(colorspace::darken("#F5F5F5"))) %>% 
-  cols_hide(character) %>% 
-  cols_label(headshot = "") %>%
-  cols_align("center") %>% 
-  gt_theme_paper() %>% 
-  gt_text_as_fa(s1:`s9*`,
-                category_icons,
-                costume_details)
