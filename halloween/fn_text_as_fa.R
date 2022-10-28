@@ -1,5 +1,6 @@
 gt_text_as_fa <- function(gt_object, column, 
-                         reference_table,
+                         icon_table,
+                         category_table,
                          ...,
                          align = "center") {
   stopifnot("Table must be of class 'gt_tbl'" = "gt_tbl" %in% class(gt_object))
@@ -15,13 +16,16 @@ gt_text_as_fa <- function(gt_object, column,
         if(gtExtras:::is_blank(xy) || is.na(xy)){
           return(gt::html("&nbsp;"))
         }
-        
-        this_icon = reference_table %>% filter(costume_category == xy) %>% pull(fa_icon)
-        this_fill = reference_table %>% filter(costume_category == xy) %>% pull(color)
+
+        this_category = category_table %>% filter(costume_detail == xy) %>% pull(costume_category)
+      
+        this_icon = icon_table %>% filter(costume_category == this_category) %>% pull(fa_icon)
+        this_fill = icon_table %>% filter(costume_category == this_category) %>% pull(color)
         
         this_fa <- fontawesome::fa(this_icon, ..., 
                                       fill = this_fill, 
-                                      height = "20px", a11y = "sem") %>%
+                                      height = "20px", a11y = "sem",
+                                   title = xy) %>%
           as.character() %>%
           gt::html()
         
